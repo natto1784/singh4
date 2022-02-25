@@ -73,6 +73,7 @@ impl FfmpegTranscode {
     }
 
     pub fn run(&self) -> ExitStatus {
+        println!("{}", self.args.join(" "));
         Command::new("ffmpeg")
             .args(&self.args)
             .args(vec!["-c:a", &self.acodec])
