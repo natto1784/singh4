@@ -1,0 +1,18 @@
+cargo-features = ["edition2021"]
+
+[package]
+name = "singh4"
+version = "0.1.0"
+authors = [ "Amneesh Singh <natto@weirdnatto.in>" ]
+edition = "2021"
+
+[dependencies]
+tracing = "*"
+
+[dependencies.serenity]
+version = "0.10.10"
+features = ["cache", "framework", "standard_framework", "rustls_backend", "unstable_discord_api", "collector"]
+
+[dependencies.tokio]
+version = "1.0"
+features = ["macros", "signal", "rt-multi-thread"]
