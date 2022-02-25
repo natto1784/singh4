@@ -1,11 +1,15 @@
+mod commands;
 mod handler;
+mod lib;
+use commands::general::*;
+use commands::transcode::*;
 use handler::Handler;
 use serenity::{
     client::bridge::gateway::ShardManager,
     framework::{
         standard::{
             help_commands,
-            macros::help,
+            macros::{group, help},
             Args, CommandGroup, CommandResult, HelpOptions,
         },
         StandardFramework,
@@ -21,6 +25,14 @@ struct ShardManagerContainer;
 impl TypeMapKey for ShardManagerContainer {
     type Value = Arc<Mutex<ShardManager>>;
 }
+
+#[group]
+#[commands(remux)]
+struct Transcode;
+
+#[group]
+#[commands(ping)]
+struct General;
 
 #[help]
 #[max_levenshtein_distance(2)]
@@ -56,8 +68,10 @@ async fn main() {
     };
 
     let framework = StandardFramework::new()
-        .configure(|c| c.owners(owners).prefix(","))
-        .help(&MY_HELP);
+        .configure(|c| c.owners(owners).prefix("xx"))
+        .help(&MY_HELP)
+        .group(&GENERAL_GROUP)
+        .group(&TRANSCODE_GROUP);
 
     let mut client = Client::builder(&token)
         .framework(framework)

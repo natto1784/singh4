@@ -20,9 +20,10 @@
           devShells = with pkgs; {
             default = mkShell
               {
-                buildInputs = [
+                buildInputs = with gst_all_1; [
                   rust-bin.nightly.latest.default
                   rust-analyzer
+                  ffmpeg
                 ];
               };
             bare = mkShell
@@ -46,6 +47,9 @@
             src = ./.;
             nativeBuildInputs = with pkgs; [
               rust-bin.nightly.latest.default
+            ];
+            buildInputs = with pkgs; [
+              ffmpeg
             ];
             cargoSha256 = "sha256-DhWWUNDpDsao6lOogoM5UfUgrUfEmZvCpY0pxmr4/mI=";
           };
