@@ -27,7 +27,7 @@ impl TypeMapKey for ShardManagerContainer {
 }
 
 #[group]
-#[commands(remux)]
+#[commands(remux,speed)]
 struct Transcode;
 
 #[group]

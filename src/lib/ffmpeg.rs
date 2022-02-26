@@ -15,8 +15,12 @@ fn sanitize_arg<V: Into<String>>(value: V) -> String {
 pub struct FfmpegTranscode {
     args: Vec<String>,
     out: String,
-    acodec: String,
-    vcodec: String,
+    acodec: Option<String>,
+    vcodec: Option<String>,
+    abitrate: Option<String>,
+    vbitrate: Option<String>,
+    afilter: Vec<String>,
+    vfilter: Vec<String>,
 }
 
 impl Default for FfmpegTranscode {
@@ -24,8 +28,12 @@ impl Default for FfmpegTranscode {
         FfmpegTranscode {
             args: vec![],
             out: String::from("/tmp/ffmpeg"),
-            acodec: String::from("copy"),
-            vcodec: String::from("copy"),
+            acodec: None,
+            vcodec: None,
+            abitrate: None,
+            vbitrate: None,
+            afilter: vec![],
+            vfilter: vec![],
         }
     }
 }
@@ -59,12 +67,48 @@ impl FfmpegTranscode {
     }
 
     pub fn set_acodec<V: ToString>(&mut self, acodec: V) -> &mut Self {
-        self.acodec = acodec.to_string();
+        self.acodec = Some(acodec.to_string()).filter(String::is_empty);
         self
     }
 
     pub fn set_vcodec<V: ToString>(&mut self, vcodec: V) -> &mut Self {
-        self.vcodec = vcodec.to_string();
+        self.vcodec = Some(vcodec.to_string()).filter(String::is_empty);
+        self
+    }
+
+    pub fn set_abitrate<V: ToString>(&mut self, bit: V) -> &mut Self {
+        self.abitrate = Some(bit.to_string()).filter(String::is_empty);
+        self
+    }
+
+    pub fn set_vbitrate<V: ToString>(&mut self, bit: V) -> &mut Self {
+        self.vbitrate = Some(bit.to_string()).filter(String::is_empty);
+        self
+    }
+
+    pub fn add_afilter<V: Into<String>>(&mut self, value: V) -> &mut Self {
+        self.afilter.push(value.into());
+        self
+    }
+
+    pub fn set_afilter<T: Into<String>, V: IntoIterator<Item = T>>(
+        &mut self,
+        value: V,
+    ) -> &mut Self {
+        self.afilter = value.into_iter().map(|x| x.into()).collect();
+        self
+    }
+
+    pub fn add_vfilter<V: Into<String>>(&mut self, value: V) -> &mut Self {
+        self.vfilter.push(value.into());
+        self
+    }
+
+    pub fn set_vfilter<T: Into<String>, V: IntoIterator<Item = T>>(
+        &mut self,
+        value: V,
+    ) -> &mut Self {
+        self.vfilter = value.into_iter().map(|x| x.into()).collect();
         self
     }
 
@@ -74,12 +118,37 @@ impl FfmpegTranscode {
 
     pub fn run(&self) -> ExitStatus {
         println!("{}", self.args.join(" "));
+
         Command::new("ffmpeg")
             .args(&self.args)
-            .args(vec!["-c:a", &self.acodec])
-            .args(vec!["-c:v", &self.vcodec])
+            .args(match &self.acodec {
+                Some(ac) => vec!["-c:a", ac],
+                None => vec![],
+            })
+            .args(match &self.vcodec {
+                Some(vc) => vec!["-c:v", vc],
+                None => vec![],
+            })
+            .args(match &self.abitrate {
+                Some(ab) => vec!["-b:a", ab],
+                None => vec![],
+            })
+            .args(match &self.vbitrate {
+                Some(vb) => vec!["-b:v", vb],
+                None => vec![],
+            })
+            .args(if !self.vfilter.is_empty() {
+                vec![String::from("-filter:v"), self.vfilter.join(";")]
+            } else {
+                vec![]
+            })
+            .args(if !self.afilter.is_empty() {
+                vec![String::from("-filter:a"), self.afilter.join(";")]
+            } else {
+                vec![]
+            })
             .arg(&self.out)
             .status()
-            .expect("FFmpeg failed to run")
+            .expect("Can't execute ffmpeg")
     }
 }

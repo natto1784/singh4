@@ -51,7 +51,7 @@
             buildInputs = with pkgs; [
               ffmpeg
             ];
-            cargoSha256 = "sha256-DhWWUNDpDsao6lOogoM5UfUgrUfEmZvCpY0pxmr4/mI=";
+            cargoSha256 = "sha256-0rzz+xOQnZYwygReKobNvUAOMeRrFZj7FUVSkAObm7I=";
           };
         }
       );
