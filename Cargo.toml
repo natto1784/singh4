@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 tracing = "*"
 reqwest = "*"
+linkify = "*"
 
 [dependencies.serenity]
 version = "0.10.10"

@@ -27,7 +27,7 @@ impl TypeMapKey for ShardManagerContainer {
 }
 
 #[group]
-#[commands(remux,speed)]
+#[commands(remux, speed)]
 struct Transcode;
 
 #[group]
@@ -68,7 +68,7 @@ async fn main() {
     };
 
     let framework = StandardFramework::new()
-        .configure(|c| c.owners(owners).prefix("xx"))
+        .configure(|c| c.owners(owners).prefix("xx").delimiters(vec![" ", "\n"]))
         .help(&MY_HELP)
         .group(&GENERAL_GROUP)
         .group(&TRANSCODE_GROUP);
