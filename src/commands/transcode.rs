@@ -1,4 +1,4 @@
-use crate::lib::ffmpeg::FfmpegTranscode;
+use crate::lib::{ffmpeg::FfmpegTranscode, messages::ExtractInfo};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     http::AttachmentType,
@@ -13,11 +13,11 @@ pub const IMAGE_EXTS: [&'static str; 6] = ["png", "gif", "bmp", "webp", "jpg", "
 #[command]
 #[aliases("mux")]
 pub async fn remux(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    let q: Vec<&str> = args.raw().collect::<Vec<&str>>();
-    if q.len() < 2 || q.len() > 4 {
+    let q = msg.extract_urls().urls;
+    if q.len() < 2 {
         msg.reply(
             ctx,
-            "Please use the proper syntax: `xxremux <audio> <video> [audio_codec] [video_codec]`",
+            "Please use the proper syntax: `xxremux <audio> <video> [audio_codec] [video_codec]`"
         )
         .await?;
         return Ok(());
@@ -25,13 +25,13 @@ pub async fn remux(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     let mut trans = FfmpegTranscode::default();
 
-    trans.add_input(q[0]);
+    trans.add_input(&q[0]);
 
     trans.set_acodec("copy");
 
     let mut ext = Path::new(&q[1]).extension().unwrap().to_str().unwrap();
     if IMAGE_EXTS.contains(&ext) {
-        let resp = reqwest::get(q[1]).await?;
+        let resp = reqwest::get(&q[1]).await?;
         let p = format!("/tmp/{}{}-image.{}", "singh4-", msg.id, ext);
         let mut f = File::create(&p).await?;
         tokio::io::copy(&mut resp.bytes().await?.as_ref(), &mut f).await?;
@@ -44,19 +44,20 @@ pub async fn remux(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             .add_input(&p)
             .set_vcodec("h264")
             .add_arg("vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2") //to correct the dimensions
-            .add_arg("tune", "stillimage");
+            .add_arg("tune", "stillimage")
+            .add_arg("pix_fmt", "yuv420p");
         ext = "mp4";
     } else {
-        trans.add_input(q[1]).set_vcodec("copy");
+        trans.add_input(&q[1]).set_vcodec("copy");
     }
 
-    if q.len() > 2 {
+ /*   if q.len() > 2 {
         trans.set_acodec(q[2]);
     }
 
     if q.len() > 3 {
         trans.set_vcodec(q[3]);
-    }
+    }*/
 
     let output = format!("/tmp/{}{}.{}", "singh4-", msg.id, ext);
 

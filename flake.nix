@@ -5,54 +5,55 @@
     nixpkgs.url = github:nixos/nixpkgs/nixos-unstable;
     utils.url = github:numtide/flake-utils;
     rust-overlay.url = github:oxalica/rust-overlay;
+    cargo2nix.url = github:cargo2nix/cargo2nix;
   };
 
-  outputs = { self, nixpkgs, utils, rust-overlay }:
+  outputs = { self, nixpkgs, utils, rust-overlay, cargo2nix }:
     utils.lib.eachDefaultSystem
       (system:
         let
-          overlays = [ (import rust-overlay) ];
+          overlays =
+            [
+              (import "${cargo2nix}/overlay")
+              rust-overlay.overlay
+            ];
+
           pkgs = import nixpkgs {
             inherit system overlays;
           };
+
+          rustPkgs = pkgs.rustBuilder.makePackageSet' {
+            rustChannel = "latest";
+            packageFun = import ./Cargo.nix;
+            packageOverrides = pkgs: pkgs.rustBuilder.overrides.all ++ [
+              (pkgs.rustBuilder.rustLib.makeOverride {
+                name = "singh4";
+                overrideAttrs = drv: {
+                  propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                    pkgs.openssl
+                    pkgs.archiver
+                    pkgs.pkg-config
+                  ];
+                };
+              })
+            ];
+          };
+
         in
         rec {
-          devShells = with pkgs; {
-            default = mkShell
-              {
-                buildInputs = with gst_all_1; [
-                  rust-bin.nightly.latest.default
-                  rust-analyzer
-                  ffmpeg
-                ];
-              };
-            bare = mkShell
-              {
-                buildInputs = [
-                  rust-bin.nightly.latest.default
-                ];
-              };
-            withLSP = mkShell
-              {
-                buildInputs = [
-                  rust-bin.nightly.latest.default
-                  rust-analyzer
-                ];
-              };
-          };
-          devShell = devShells.default;
-          defaultPackage = pkgs.rustPlatform.buildRustPackage rec {
-            pname = "singh4";
-            version = "0.1.0";
-            src = ./.;
-            nativeBuildInputs = with pkgs; [
+          devShell = with pkgs; mkShell {
+            buildInputs = [
               rust-bin.nightly.latest.default
+              rust-analyzer
+              postgresql
             ];
-            buildInputs = with pkgs; [
-              ffmpeg
-            ];
-            cargoSha256 = "sha256-0rzz+xOQnZYwygReKobNvUAOMeRrFZj7FUVSkAObm7I=";
           };
+
+          packages = {
+            default = (rustPkgs.workspace.singh4 { }).bin;
+          };
+
+          defaultPackage = packages.default;
         }
       );
 }

@@ -3,11 +3,11 @@ use serenity::model::channel::Message;
 
 #[derive(Default)]
 pub struct URLExtractInfo {
-    urls: Vec<String>,
-    n_attachments: u8,
-    n_links: u16,
-    rn_attachments: Option<u8>,
-    rn_links: Option<u16>,
+    pub urls: Vec<String>,
+    pub n_attachments: u8,
+    pub n_links: u16,
+    pub rn_attachments: Option<u8>,
+    pub rn_links: Option<u16>,
 }
 
 pub trait ExtractInfo {

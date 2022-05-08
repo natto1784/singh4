@@ -1,0 +1,73 @@
+resource_types:
+- name: nomad
+  type: registry-image
+  source:
+    repository: natto17/concourse-nomad-resource
+    tag: latest
+resources:
+- name: nomad-job
+  type: nomad
+  source:
+    url: https://nomad.weirdnatto.in
+    name: singh4
+    token: ((nomad.token))
+    consul_token: ((nomad.consul))
+    vault_token: ((nomad.vault))
+
+- name: repo
+  type: git
+  source:
+    uri: https://git.weirdnatto.in/natto1784/singh4.git
+    branch: master
+
+- name: nix
+  type: registry-image
+  source:
+    repository: nixos/nix
+    tag: latest-arm64
+
+jobs:
+- name: configure-self
+  public: true
+  plan:
+  - get: repo
+    trigger: true
+  - set_pipeline: self
+    file: repo/ci/pipeline.yml
+- name: singh4
+  plan:
+  - get: repo
+    trigger: true
+    passed: [configure-self]
+  - get: nix
+    trigger: false
+  - task: build
+    image: nix
+    config:
+      params:
+        CACHIX_NAME: ((cachix.name))
+        CACHIX_AUTH_TOKEN: ((cachix.token))
+      inputs:
+      - name: repo
+      outputs: 
+      - name: storepath
+      platform: linux
+      run:
+        path: sh
+        args:
+        - -c
+        - |
+          nix-env -iA nixpkgs.cachix
+          cachix use $CACHIX_NAME
+          cachix watch-exec $CACHIX_NAME nix -- --extra-experimental-features "nix-command flakes" build ./repo
+          readlink -n result-bin > storepath/value
+          
+  - put: nomad-job
+    params:
+      job_path: repo/singh4.nomad
+      templating: true
+      restart: true
+      vars:
+        binary: singh4
+      var_files:
+        storepath: storepath/value

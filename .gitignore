@@ -1,2 +1,7 @@
 target/
 result
+\#*\#
+.\#*
+.*~*~
+*~
+result-bin
